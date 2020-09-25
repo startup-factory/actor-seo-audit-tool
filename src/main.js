@@ -78,7 +78,7 @@ Apify.main(async () => {
             const data = {
                 url: page.url(),
                 title: await page.title(),
-                isLoaded: true,
+                // isLoaded: true,
                 ...await basicSEO(page, seoParams),
                 jsonLd: await jsonLdLookup(page),
                 microdata: await microdataLookup(page),
