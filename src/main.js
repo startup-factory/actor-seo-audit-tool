@@ -9,6 +9,7 @@ const { jsonLdLookup, microdataLookup } = require('./ontology_lookups.js');
 Apify.main(async () => {
     const {
         startUrl,
+        startUrls,
         proxy,
         maxRequestsPerCrawl,
         maxDepth,
@@ -21,20 +22,57 @@ Apify.main(async () => {
         handlePageTimeoutSecs = 3600,
     } = await Apify.getValue('INPUT');
 
-    log.info(`SEO audit for ${startUrl} started`);
-
-    // Get web hostname
-    const { hostname } = new URL(startUrl);
-    const pseudoUrl = new PseudoUrl(`[http|https]://[.*]${hostname}[.*]`);
-
-    log.info(`Web host name: ${hostname}`);
 
     const proxyConfiguration = await Apify.createProxyConfiguration({
         ...proxy,
     }) || undefined;
 
     const requestQueue = await Apify.openRequestQueue();
-    await requestQueue.addRequest({ url: startUrl });
+
+    if (Array.isArray(startUrls) && startUrls.length > 0) {
+      Apify.utils.log.warning('Search and directUrls are disabled when startUrls tsv file is used');
+        for (const startUrl of startUrls) {
+            Apify.utils.log.info(`startUrl: ${startUrl}`);
+            if (startUrl){
+              const {requestsFromUrl} = startUrl;
+              Apify.utils.log.info(`requestsFromUrl: ${requestsFromUrl}`);
+              if (requestsFromUrl){
+                  const { body } = await Apify.utils.requestAsBrowser({ url: requestsFromUrl, encoding:'utf-8' });
+                  let lines = body.split('\n');
+                  delete  lines[0]
+                  let requests = lines.map(line => {
+                      let [id, url] = line.trim().split('\t');
+                      if (!url) { return false }
+                      log.info(`SEO audit for ${request.url} started`);
+
+                      // Get web hostname
+                      const { hostname } = new URL(request.url);
+                      const pseudoUrl = new PseudoUrl(`[http|https]://[.*]${hostname}[.*]`);
+
+                      log.info(`Web host name: ${hostname}`);
+
+                      Apify.utils.log.info(`csv extraction: id: ${id} url ${url}`);
+                      return {url, userData: {id, pseudoUrl}};
+                  }).filter(req => !!req);
+
+                  requests.map((request) => {
+                    await requestQueue.addRequest(request);
+                  })
+              }
+            }
+        }
+    } else {
+      log.info(`SEO audit for ${startUrl} started`);
+
+      // Get web hostname
+      const { hostname } = new URL(startUrl);
+      const pseudoUrl = new PseudoUrl(`[http|https]://[.*]${hostname}[.*]`);
+
+      log.info(`Web host name: ${hostname}`);
+
+      await requestQueue.addRequest({ url: startUrl, userData: { pseudoUrl } });
+    }
+
 
     const crawler = new Apify.PuppeteerCrawler({
         requestQueue,
@@ -90,7 +128,7 @@ Apify.main(async () => {
             const enqueueResults = await enqueueLinks({
                 page,
                 selector: 'a[href]:not([target="_blank"]),a[href]:not([rel*="nofollow"]),a[href]:not([rel*="noreferrer"])', // exclude externals
-                pseudoUrls: [pseudoUrl],
+                pseudoUrls: [request.userData.pseudoUrl],
                 requestQueue,
                 transformRequestFunction: (r) => {
                     const url = new URL(r.url);
