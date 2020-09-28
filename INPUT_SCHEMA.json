@@ -15,7 +15,7 @@
             "title": "tsv list of url",
             "type": "array",
             "description": "tsv list of id + url to be crawled",
-            "prefill": [{id: "123", "url": "https://apify.com" }],
+            "prefill": [{ "url": "https://apify.com" }],
             "editor": "requestListSources"
         },
         "proxy": {
