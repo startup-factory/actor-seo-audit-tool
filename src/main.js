@@ -7,6 +7,23 @@ const { basicSEO } = require('./seo.js');
 const { jsonLdLookup, microdataLookup } = require('./ontology_lookups.js');
 
 Apify.main(async () => {
+    const input = await Apify.getValue('INPUT')
+
+//     const input = {
+//   "startUrl": "https://loicginoux.com/",
+//   "startUrls": [
+//     {
+//       "requestsFromUrl": "https://apify-uploads-prod.s3.amazonaws.com/da638uahgx8KhfEJS-seo_urls.tsv"
+//     }
+//   ],
+//   "proxy": {
+//     "useApifyProxy": true
+//   },
+//   "maxRequestsPerCrawl": 3,
+//   "maxDepth": 3,
+//   "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36",
+//   "handlePageTimeoutSecs": 3600
+// }
     const {
         startUrl,
         startUrls,
@@ -20,7 +37,8 @@ Apify.main(async () => {
         pageTimeout,
         maxRequestRetries,
         handlePageTimeoutSecs = 3600,
-    } = await Apify.getValue('INPUT');
+    } = input;
+
 
 
     const proxyConfiguration = await Apify.createProxyConfiguration({
@@ -43,10 +61,10 @@ Apify.main(async () => {
                   let requests = lines.map(line => {
                       let [id, url] = line.trim().split('\t');
                       if (!url) { return false }
-                      log.info(`SEO audit for ${request.url} started`);
+                      log.info(`SEO audit for ${url} started`);
 
                       // Get web hostname
-                      const { hostname } = new URL(request.url);
+                      const { hostname } = new URL(url);
                       const pseudoUrl = new PseudoUrl(`[http|https]://[.*]${hostname}[.*]`);
 
                       log.info(`Web host name: ${hostname}`);
@@ -55,9 +73,13 @@ Apify.main(async () => {
                       return {url, userData: {id, pseudoUrl}};
                   }).filter(req => !!req);
 
-                  requests.map((request) => {
-                    await requestQueue.addRequest(request);
-                  })
+                  const addRequestToQueue = async request => {
+                    return await requestQueue.addRequest(request)
+                  }
+
+                  const addAllRequests = async () => {
+                    return Promise.all(requests.map(addRequestToQueue))
+                  }
               }
             }
         }
@@ -166,5 +188,5 @@ Apify.main(async () => {
 
     await crawler.run();
 
-    log.info(`SEO audit for ${startUrl} finished.`);
+    log.info(`SEO audit finished.`);
 });
