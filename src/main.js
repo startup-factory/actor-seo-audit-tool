@@ -7,23 +7,23 @@ const { basicSEO } = require('./seo.js');
 const { jsonLdLookup, microdataLookup } = require('./ontology_lookups.js');
 
 Apify.main(async () => {
-    const input = await Apify.getValue('INPUT')
+    // const input = await Apify.getValue('INPUT')
 
-//     const input = {
-//   "startUrl": "https://loicginoux.com/",
-//   "startUrls": [
-//     {
-//       "requestsFromUrl": "https://apify-uploads-prod.s3.amazonaws.com/da638uahgx8KhfEJS-seo_urls.tsv"
-//     }
-//   ],
-//   "proxy": {
-//     "useApifyProxy": true
-//   },
-//   "maxRequestsPerCrawl": 3,
-//   "maxDepth": 3,
-//   "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36",
-//   "handlePageTimeoutSecs": 3600
-// }
+    const input = {
+  "startUrl": "https://loicginoux.com/",
+  "startUrls": [
+    {
+      "requestsFromUrl": "https://apify-uploads-prod.s3.amazonaws.com/da638uahgx8KhfEJS-seo_urls.tsv"
+    }
+  ],
+  "proxy": {
+    "useApifyProxy": true
+  },
+  "maxRequestsPerCrawl": 3,
+  "maxDepth": 3,
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36",
+  "handlePageTimeoutSecs": 3600
+}
     const {
         startUrl,
         startUrls,
@@ -64,14 +64,8 @@ Apify.main(async () => {
                       if (!url) { return false }
                       log.info(`SEO audit for ${url} started`);
 
-                      // Get web hostname
-                      const { hostname } = new URL(url);
-                      const pseudoUrl = new PseudoUrl(`[http|https]://[.*]${hostname}[.*]`);
-
-                      log.info(`Web host name: ${hostname}`);
-
                       Apify.utils.log.info(`csv extraction: id: ${id} url ${url}`);
-                      return {url, userData: {id, pseudoUrl}};
+                      return {url, userData: {id}};
                   }).filter(req => !!req);
               }
             }
@@ -79,13 +73,7 @@ Apify.main(async () => {
     } else {
       log.info(`SEO audit for ${startUrl} started`);
 
-      // Get web hostname
-      const { hostname } = new URL(startUrl);
-      const pseudoUrl = new PseudoUrl(`[http|https]://[.*]${hostname}[.*]`);
-
-      log.info(`Web host name: ${hostname}`);
-
-      requestListSources = [{ url: startUrl, userData: { pseudoUrl } }];
+      requestListSources = [{ url: startUrl}];
     }
 
     if (requestListSources.length === 0) {
@@ -148,11 +136,14 @@ Apify.main(async () => {
 
             await Apify.pushData(data);
 
+            const { hostname } = new URL(request.url);
+            const pseudoUrl = new PseudoUrl(`[http|https]://[.*]${hostname}[.*]`);
+
             // Enqueue links, support SPAs
             const enqueueResults = await enqueueLinks({
                 page,
                 selector: 'a[href]:not([target="_blank"]),a[href]:not([rel*="nofollow"]),a[href]:not([rel*="noreferrer"])', // exclude externals
-                pseudoUrls: [request.userData.pseudoUrl],
+                pseudoUrls: [pseudoUrl],
                 requestQueue,
                 transformRequestFunction: (r) => {
                     const url = new URL(r.url);
