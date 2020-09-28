@@ -46,6 +46,7 @@ Apify.main(async () => {
     }) || undefined;
 
     const requestQueue = await Apify.openRequestQueue();
+    let requestListSources = [];
 
     if (Array.isArray(startUrls) && startUrls.length > 0) {
       Apify.utils.log.warning('Search and directUrls are disabled when startUrls tsv file is used');
@@ -58,7 +59,7 @@ Apify.main(async () => {
                   const { body } = await Apify.utils.requestAsBrowser({ url: requestsFromUrl, encoding:'utf-8' });
                   let lines = body.split('\n');
                   delete  lines[0]
-                  let requests = lines.map(line => {
+                  requestListSources = lines.map(line => {
                       let [id, url] = line.trim().split('\t');
                       if (!url) { return false }
                       log.info(`SEO audit for ${url} started`);
@@ -72,14 +73,6 @@ Apify.main(async () => {
                       Apify.utils.log.info(`csv extraction: id: ${id} url ${url}`);
                       return {url, userData: {id, pseudoUrl}};
                   }).filter(req => !!req);
-
-                  const addRequestToQueue = async request => {
-                    return await requestQueue.addRequest(request)
-                  }
-
-                  const addAllRequests = async () => {
-                    return Promise.all(requests.map(addRequestToQueue))
-                  }
               }
             }
         }
@@ -92,11 +85,19 @@ Apify.main(async () => {
 
       log.info(`Web host name: ${hostname}`);
 
-      await requestQueue.addRequest({ url: startUrl, userData: { pseudoUrl } });
+      requestListSources = [{ url: startUrl, userData: { pseudoUrl } }];
     }
+
+    if (requestListSources.length === 0) {
+        Apify.utils.log.info('No URLs to process');
+        process.exit(0);
+    }
+
+    const requestList = await Apify.openRequestList('request-list', requestListSources);
 
 
     const crawler = new Apify.PuppeteerCrawler({
+        requestList,
         requestQueue,
         proxyConfiguration,
         useSessionPool: true,
@@ -136,6 +137,7 @@ Apify.main(async () => {
             log.info('Start processing', { url: request.url });
 
             const data = {
+                id: request.userData.id,
                 url: page.url(),
                 title: await page.title(),
                 // isLoaded: true,
@@ -162,6 +164,7 @@ Apify.main(async () => {
 
                     return {
                         url: url.toString(),
+                        userData: r.userData
                     };
                 },
             });
@@ -179,6 +182,7 @@ Apify.main(async () => {
             log.info(`Request ${request.url} failed too many times`);
 
             await Apify.pushData({
+                id: request.userData.id,
                 url: request.url,
                 isLoaded: false,
                 errorMessage: error.message,
