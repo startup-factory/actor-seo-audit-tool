@@ -23,7 +23,7 @@ async function basicSEO(page, userParams = {}) {
         ...DEFAULT_SEO_PARAMS,
         ...userParams,
     };
-    const { origin } = new URL(page.url());
+    const { origin, hostname } = new URL(page.url());
 
     const fetchInBrowser = (url) => page.evaluate(async (pUrl) => {
         try {
@@ -139,7 +139,7 @@ async function basicSEO(page, userParams = {}) {
 
     // seo.robotsFileExists = workingStatusCodes.includes(await fetchInBrowser(`${origin}/robots.txt`));
     // seo.faviconExists = workingStatusCodes.includes(await fetchInBrowser(`${origin}/favicon.ico`));
-    seo.favicon = `http://icons.duckduckgo.com/ip2/${origin}.ico`
+    seo.favicon = `http://icons.duckduckgo.com/ip2/${hostname}.ico`
 
     // Check broken links
     // const internalBrokenLinks = new Set();
