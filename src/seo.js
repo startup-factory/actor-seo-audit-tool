@@ -73,6 +73,10 @@ async function basicSEO(page, userParams = {}) {
         const h1Count = $('h1').length;
         result.isH1 = (h1Count > 0);
         if (result.isH1) result.h1 = $('h1').text();
+
+        // get page language
+        result.language = document.getElementsByTagName('html')[0].getAttribute('lang');
+
         // result.isH1OnlyOne = (h1Count === 1);
         // -- h2
         // result.isH2 = !!($('h2').length);
@@ -134,8 +138,8 @@ async function basicSEO(page, userParams = {}) {
     const { workingStatusCodes } = seoParams;
 
     // seo.robotsFileExists = workingStatusCodes.includes(await fetchInBrowser(`${origin}/robots.txt`));
-    seo.faviconExists = workingStatusCodes.includes(await fetchInBrowser(`${origin}/favicon.ico`));
-    seo.favicon = `${origin}/favicon.ico`
+    // seo.faviconExists = workingStatusCodes.includes(await fetchInBrowser(`${origin}/favicon.ico`));
+    seo.favicon = `http://icons.duckduckgo.com/ip2/${origin}.ico`
 
     // Check broken links
     // const internalBrokenLinks = new Set();
