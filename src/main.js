@@ -8,12 +8,26 @@ const { jsonLdLookup, microdataLookup } = require('./ontology_lookups.js');
 
 Apify.main(async () => {
     const input = await Apify.getValue('INPUT')
-
+    // const input = {
+    //   "startUrl": "https://loicginoux.com/",
+    //   "startUrls": [
+    //     {
+    //       "requestsFromUrl": "https://apify-uploads-prod.s3.amazonaws.com/7mkjnYFXDBJw8KLQf-Hotels-Liste-URLs-31.08.20_-_Copy_of_1er-Test-Apify_%281%29.tsv"
+    //     }
+    //   ],
+    //   "proxy": {
+    //     "useApifyProxy": true
+    //   },
+    //   "maxPages": 3,
+    //   "maxDepth": 3,
+    //   "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36",
+    //   "handlePageTimeoutSecs": 3600
+    // }
     const {
         startUrl,
         startUrls,
         proxy,
-        maxRequestsPerCrawl,
+        maxPages,
         maxDepth,
         seoParams,
         userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36',
@@ -36,7 +50,7 @@ Apify.main(async () => {
     if (Array.isArray(startUrls) && startUrls.length > 0) {
       Apify.utils.log.warning('Search and directUrls are disabled when startUrls tsv file is used');
         for (const startUrl of startUrls) {
-            Apify.utils.log.info(`startUrl: ${startUrl}`);
+
             if (startUrl){
               const {requestsFromUrl} = startUrl;
               Apify.utils.log.info(`requestsFromUrl: ${requestsFromUrl}`);
@@ -65,6 +79,9 @@ Apify.main(async () => {
         Apify.utils.log.info('No URLs to process');
         process.exit(0);
     }
+
+    const maxRequestsPerCrawl = requestListSources.length * maxPages
+    Apify.utils.log.info(`${requestListSources.length} lines to process, ${maxPages} page per site, max page crawled: ${maxRequestsPerCrawl}`);
 
     const requestList = await Apify.openRequestList('request-list', requestListSources);
 
@@ -127,6 +144,7 @@ Apify.main(async () => {
             // Enqueue links, support SPAs
             const enqueueResults = await enqueueLinks({
                 page,
+                limit: maxPages - 1,
                 selector: 'a[href]:not([target="_blank"]),a[href]:not([rel*="nofollow"]),a[href]:not([rel*="noreferrer"])', // exclude externals
                 pseudoUrls: [pseudoUrl],
                 requestQueue,

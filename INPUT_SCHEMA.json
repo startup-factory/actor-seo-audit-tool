@@ -27,9 +27,9 @@
             },
             "editor": "proxy"
         },
-        "maxRequestsPerCrawl": {
+        "maxPages": {
             "title": "Max pages",
-            "description": "Maximum number of pages to visit. Defaults to unlimited pages",
+            "description": "Maximum number of pages to visit per site. Defaults to unlimited pages",
             "example": 100,
             "type": "integer",
             "editor": "number"
