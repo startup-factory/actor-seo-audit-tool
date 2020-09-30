@@ -7,23 +7,8 @@ const { basicSEO } = require('./seo.js');
 const { jsonLdLookup, microdataLookup } = require('./ontology_lookups.js');
 
 Apify.main(async () => {
-    // const input = await Apify.getValue('INPUT')
+    const input = await Apify.getValue('INPUT')
 
-    const input = {
-  "startUrl": "https://loicginoux.com/",
-  "startUrls": [
-    {
-      "requestsFromUrl": "https://apify-uploads-prod.s3.amazonaws.com/da638uahgx8KhfEJS-seo_urls.tsv"
-    }
-  ],
-  "proxy": {
-    "useApifyProxy": true
-  },
-  "maxRequestsPerCrawl": 3,
-  "maxDepth": 3,
-  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36",
-  "handlePageTimeoutSecs": 3600
-}
     const {
         startUrl,
         startUrls,
